@@ -1,5 +1,6 @@
 export class Vote {
   idgroup: string;
+  timeout: Date;
   header: string;
   owner: string;
   select: Array<string>;

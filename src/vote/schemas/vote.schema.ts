@@ -11,6 +11,9 @@ export class Vote {
   idgroup: string;
 
   @Prop()
+  timeout: Date;
+
+  @Prop()
   header: string;
 
   @Prop()

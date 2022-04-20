@@ -50,7 +50,7 @@ export class VoteService {
   }
 
   async findPostAll(idgroup: string) {
-    return this.voteModel.findOne({ idgroup: idgroup }).exec();
+    return this.voteModel.find({ idgroup: idgroup }).exec();
   }
 
   async findOne(id: string) {

@@ -6,7 +6,6 @@ import * as bcrypt from 'bcrypt';
 import { MemberDocument } from './schemas/member.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Member } from './entities/member.entity';
-import { UpdateMemberPasswordDto } from './dto/update-member-password.dto';
 
 @Injectable()
 export class MemberService {
@@ -57,20 +56,28 @@ export class MemberService {
     return this.memberModel.findOne({ username: username }).exec();
   }
 
-  async update(id: number, updateMemberDto: UpdateMemberDto) {
-    return this.memberModel.updateOne({
-      _id: id,
-      $set: { ...updateMemberDto },
-    });
+  async update(id: string, updateMemberDto: UpdateMemberDto) {
+    return this.memberModel.updateOne(
+      {
+        _id: id,
+      },
+      {
+        $set: { ...updateMemberDto },
+      },
+    );
   }
 
-  async password(id: number, data: UpdateMemberPasswordDto) {
+  async password(id: string, data: string) {
     const salt = await bcrypt.genSalt();
-    const passwordEncode = await bcrypt.hash(salt, data.password);
-    return this.memberModel.updateOne({
-      _id: id,
-      $set: { password: passwordEncode, salt: salt },
-    });
+    const passwordEncode = await bcrypt.hash(data, salt);
+    return this.memberModel.updateOne(
+      {
+        _id: id,
+      },
+      {
+        $set: { password: passwordEncode, salt: salt },
+      },
+    );
   }
 
   async remove(id: number) {

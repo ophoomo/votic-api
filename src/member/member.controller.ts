@@ -3,23 +3,27 @@ import {
   Post,
   Body,
   Patch,
-  Param,
-  Delete,
   Version,
   Res,
   Put,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { MemberService } from './member.service';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UpdateMemberPasswordDto } from './dto/update-member-password.dto';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 
 @Controller('member')
 export class MemberController {
-  constructor(private readonly memberService: MemberService) {}
+  constructor(
+    private readonly memberService: MemberService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   // create is method register member
   @Post()
@@ -37,7 +41,7 @@ export class MemberController {
       return;
     }
 
-    this.memberService.create(createMemberDto);
+    await this.memberService.create(createMemberDto);
     res.status(201).json({
       status: true,
       message: 'สมัครสมาชิกเสร็จสิ้น',
@@ -45,15 +49,25 @@ export class MemberController {
   }
 
   // update is method update data member
-  @Patch(':id')
+  @Patch('')
   @Version('1')
   @UseGuards(JwtAuthGuard)
   async update(
     @Res() res: Response,
-    @Param('id') id: number,
     @Body() updateMemberDto: UpdateMemberDto,
+    @Req() req: Request,
   ) {
-    this.memberService.update(id, updateMemberDto);
+    const token = req.headers.authorization.split(' ')[1];
+    const tokenDecode = await this.jwtService.decode(token);
+    const data = await this.memberService.findOne(tokenDecode['id']);
+    if (data === null) {
+      res.status(200).json({
+        status: false,
+        message: 'ไม่พบข้อมูล',
+      });
+      return;
+    }
+    await this.memberService.update(tokenDecode['id'], updateMemberDto);
     res.status(200).json({
       status: true,
       message: 'แก้ไขข้อมูลส่วนตัวเสร็จสิ้น',
@@ -61,30 +75,42 @@ export class MemberController {
   }
 
   // password is method update password member
-  @Put(':id')
+  @Put('/password')
   @Version('1')
   @UseGuards(JwtAuthGuard)
   async password(
     @Res() res: Response,
-    @Param('id') id: number,
     @Body() updateMemberPasswordDto: UpdateMemberPasswordDto,
+    @Req() req: Request,
   ) {
-    this.memberService.password(id, updateMemberPasswordDto);
+    const token = req.headers.authorization.split(' ')[1];
+    const tokenDecode = await this.jwtService.decode(token);
+    const data = await this.memberService.findOne(tokenDecode['id']);
+    if (data === null) {
+      res.status(200).json({
+        status: false,
+        message: 'ไม่พบข้อมูล',
+      });
+      return;
+    }
+    const passwordEncode = await bcrypt.hash(
+      updateMemberPasswordDto.passwordold,
+      data.salt,
+    );
+    if (passwordEncode !== data.password) {
+      res.status(200).json({
+        status: false,
+        message: 'รหัสผ่านเดิมไม่ถูกต้อง',
+      });
+      return;
+    }
+    await this.memberService.password(
+      tokenDecode['id'],
+      updateMemberPasswordDto.passwordnew,
+    );
     res.status(200).json({
       status: true,
       message: 'เปลื่ยนรหัสผ่านสำเร็จ',
-    });
-  }
-
-  // remove is method delete data member
-  @Delete(':id')
-  @Version('1')
-  @UseGuards(JwtAuthGuard)
-  async remove(@Param('id') id: number, @Res() res: Response) {
-    this.memberService.remove(id);
-    res.status(200).json({
-      status: true,
-      message: 'ลบข้อมูลเสร็จสิ้น',
     });
   }
 }

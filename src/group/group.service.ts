@@ -63,6 +63,13 @@ export class GroupService {
     );
   }
 
+  async changeOwnerByOwner(idGroup: string, newOwner: string) {
+    return this.groupModel.updateOne(
+      { _id: idGroup },
+      { $set: { owner: newOwner } },
+    );
+  }
+
   async findAll() {
     return this.groupModel.find().exec();
   }

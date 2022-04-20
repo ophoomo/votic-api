@@ -10,6 +10,7 @@ import {
   UseGuards,
   Res,
   Req,
+  Put,
 } from '@nestjs/common';
 import { GroupService } from './group.service';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -31,7 +32,21 @@ export class GroupController {
   // findMemberGroup is method find group of member joined
   @Get(':id/member')
   @Version('1')
-  async findMemberGroup(@Param('id') id: string, @Res() res: Response) {
+  async findMemberGroup(
+    @Param('id') id: string,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
+    const token = req.headers.authorization.split(' ')[1];
+    const tokenDecode = await this.jwtService.decode(token);
+    const checkMemberStatus = await this.checkMember(id, tokenDecode['id']);
+    if (!checkMemberStatus) {
+      res.status(200).json({
+        status: false,
+        message: 'คุณไม่ได้อยู่ในกลุ่ม',
+      });
+      return;
+    }
     const data = await this.groupService.findOne(id);
     if (data === null) {
       res.status(200).json({
@@ -61,7 +76,21 @@ export class GroupController {
   // findGroup is method find group
   @Get(':id')
   @Version('1')
-  async findGroup(@Param('id') id: string, @Res() res: Response) {
+  async findGroup(
+    @Param('id') id: string,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
+    const token = req.headers.authorization.split(' ')[1];
+    const tokenDecode = await this.jwtService.decode(token);
+    const checkMemberStatus = await this.checkMember(id, tokenDecode['id']);
+    if (!checkMemberStatus) {
+      res.status(200).json({
+        status: false,
+        message: 'คุณไม่ได้อยู่ในกลุ่ม',
+      });
+      return;
+    }
     const data = await this.groupService.findOne(id);
     if (data === null) {
       res.status(200).json({
@@ -77,6 +106,7 @@ export class GroupController {
         code: data.code,
         name: data.name,
         owner: data.owner,
+        member: data.member.length,
       },
     });
   }
@@ -115,6 +145,40 @@ export class GroupController {
     res.status(200).json({
       status: true,
       message: 'เข้าร่วมกลุ่มเรียบร้อยแล้ว',
+    });
+  }
+
+  // changeOwnerGroup is method change owner group
+  @Put(':id/owner/:newowner')
+  @Version('1')
+  async changeOwnerGroup(
+    @Param('id') id: string,
+    @Param('newowner') idNewOwner: string,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
+    const token = req.headers.authorization.split(' ')[1];
+    const tokenDecode = await this.jwtService.decode(token);
+    const checkOwnerStatus = this.checkOwner(id, tokenDecode['id']);
+    if (!checkOwnerStatus) {
+      res.status(200).json({
+        status: false,
+        message: 'คุณไม่ใช่เจ้าของกลุ่ม',
+      });
+      return;
+    }
+    const checkMemberStatus = await this.checkMember(id, idNewOwner);
+    if (!checkMemberStatus) {
+      res.status(200).json({
+        status: false,
+        message: 'เขาไม่ได้อยู่ในกลุ่ม',
+      });
+      return;
+    }
+    await this.groupService.changeOwnerByOwner(id, idNewOwner);
+    res.status(200).json({
+      status: true,
+      message: 'เปลื่ยนหัวหน้ากลุ่มเรียบร้อยแล้ว',
     });
   }
 
@@ -220,7 +284,7 @@ export class GroupController {
     if (!checkOwnerStatus) {
       res.status(200).json({
         status: false,
-        message: 'คุณไม่ใช่เจ้าของโพส',
+        message: 'คุณไม่ใช่เจ้าของกลุ่ม',
       });
       return;
     }

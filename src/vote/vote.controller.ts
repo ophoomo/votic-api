@@ -94,22 +94,25 @@ export class VoteController {
   // findvoteall is method find post vote all for member
   @Get(':id/post/all')
   @Version('1')
-  async findvoteAll(@Param('id') id: string, @Res() res: Response) {
+  async findvoteAll(
+    @Param('id') id: string,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
+    const token = req.headers.authorization.split(' ')[1];
+    const tokenDecode = await this.jwtService.decode(token);
+    const checkmember = this.checkMember(id, tokenDecode['id']);
+    if (!checkmember) {
+      res.status(200).json({
+        status: false,
+        message: 'คุณไม่ได้อยู่ในกลุ่มนี้',
+      });
+      return;
+    }
     res.status(200).json({
       status: true,
       message: 'ดึงข้อมูลเสร็จสิ้น',
-      data: this.voteService.findPostAll(id),
-    });
-  }
-
-  // findvote is method find post vote for member
-  @Get(':id/post')
-  @Version('1')
-  async findvote(@Param('id') id: string, @Res() res: Response) {
-    res.status(200).json({
-      status: true,
-      message: 'ดึงข้อมูลเสร็จสิ้น',
-      data: this.voteService.findOne(id),
+      data: await this.voteService.findPostAll(id),
     });
   }
 
