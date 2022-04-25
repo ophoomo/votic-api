@@ -22,7 +22,7 @@ export class GroupService {
     groupFormat.owner = idMember;
     groupFormat.member.push(idMember);
     while (true) {
-      groupFormat.code = await this.randomCode(7);
+      groupFormat.code = await this.randomCode(6);
       const data = await this.findCode(groupFormat.code);
       if (data === null) {
         break;

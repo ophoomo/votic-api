@@ -154,24 +154,33 @@ export class VoteController {
   }
 
   // remove is method remove post vote
-  @Delete(':id')
+  @Delete(':idgroup/:idpost')
   @Version('1')
   async remove(
-    @Param('id') id: string,
+    @Param('idgroup') idgroup: string,
+    @Param('idpost') idpost: string,
     @Res() res: Response,
     @Req() req: Request,
   ) {
     const token = req.headers.authorization.split(' ')[1];
     const tokenDecode = await this.jwtService.decode(token);
-    const checkOwnerStatus = await this.checkOwner(id, tokenDecode['id']);
+    const checkOwnerStatus = await this.checkOwner(idgroup, tokenDecode['id']);
+    const checkOwnerPostStatus = await this.checkOwnerPost(idpost, tokenDecode['id']);
     if (!checkOwnerStatus) {
+      res.status(200).json({
+        status: false,
+        message: 'คุณไม่ใช่เจ้าของกลุ่ม',
+      });
+      return;
+    }
+    if (!checkOwnerPostStatus) {
       res.status(200).json({
         status: false,
         message: 'คุณไม่ใช่เจ้าของโพส',
       });
       return;
     }
-    this.voteService.remove(id);
+    this.voteService.remove(idpost);
     res.status(200).json({
       status: true,
       message: 'ลบโพสเรียบร้อยแล้ว',
@@ -191,13 +200,25 @@ export class VoteController {
     return true;
   }
 
-  // checkOwner is method check owner of post
+  // checkOwner is method check owner of group
   private async checkOwner(
     idgroup: string,
     idmember: string,
   ): Promise<boolean> {
     const group = await this.groupService.findOne(idgroup);
     if (group.owner !== idmember) {
+      return false;
+    }
+    return true;
+  }
+
+  // checkOwnerPost is method check owner of post
+  private async checkOwnerPost(
+    idpost: string,
+    idmember: string,
+  ): Promise<boolean> {
+    const vote = await this.voteService.findOne(idpost);
+    if (vote.owner !== idmember) {
       return false;
     }
     return true;
