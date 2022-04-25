@@ -6,4 +6,5 @@ export class Vote {
   select: Array<string>;
   scroe: Array<number>;
   voted: Array<string>;
+  open: boolean;
 }

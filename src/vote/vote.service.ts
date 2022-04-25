@@ -17,6 +17,7 @@ export class VoteService {
     const voteFormat: Vote = {
       scroe: Array(createVoteDto.select.length).fill(0),
       voted: [],
+      open: true,
       owner: '',
       ...createVoteDto,
     };
@@ -61,6 +62,13 @@ export class VoteService {
     return this.voteModel.updateOne(
       { _id: id },
       { $set: { ...updateVoteDto } },
+    );
+  }
+
+  async close(id: string) {
+    return this.voteModel.updateOne(
+      { _id: id },
+      { $set: { open: false } },
     );
   }
 

@@ -10,6 +10,7 @@ import {
   UseGuards,
   Res,
   Req,
+  Put,
 } from '@nestjs/common';
 import { VoteService } from './vote.service';
 import { CreateVoteDto } from './dto/create-vote.dto';
@@ -114,6 +115,41 @@ export class VoteController {
       message: 'ดึงข้อมูลเสร็จสิ้น',
       data: await this.voteService.findPostAll(id),
     });
+  }
+
+  // close is method close post
+  @Put(":idgroup/:idpost/close")
+  @Version('1')
+  async close(
+    @Param("idgroup") idgroup: string,
+    @Param("idpost") idpost: string,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {    
+    const token = req.headers.authorization.split(' ')[1];
+    const tokenDecode = await this.jwtService.decode(token);
+    const checkOwnerStatus = await this.checkOwner(idgroup, tokenDecode['id']);
+    const checkOwnerPostStatus = await this.checkOwnerPost(idpost, tokenDecode['id']);
+    if (!checkOwnerStatus) {
+      res.status(200).json({
+        status: false,
+        message: 'คุณไม่ใช่เจ้าของกลุ่ม',
+      });
+      return;
+    }
+    if (!checkOwnerPostStatus) {
+      res.status(200).json({
+        status: false,
+        message: 'คุณไม่ใช่เจ้าของโพส',
+      });
+      return;
+    }
+    this.voteService.close(idpost);
+    res.status(200).json({
+      status: true,
+      message: 'ปิดโพสเรียบร้อยแล้ว',
+    });
+
   }
 
   // update is method update post vote for owner
