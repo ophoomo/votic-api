@@ -77,15 +77,15 @@ export class VoteController {
       });
       return;
     }
-    const checkVote = post.voted.indexOf(id);
-    if (checkVote === -1) {
+    const checkVote = post.voted.find(item => item === id);
+    if (checkVote !== undefined) {
       res.status(200).json({
         status: false,
         message: 'คุณโหวตแล้ว',
       });
       return;
     }
-    await this.voteService.vote(id, voteDto);
+    await this.voteService.vote(id, voteDto, tokenDecode['id']);
     res.status(200).json({
       status: true,
       message: 'โหวตเสร็จสิ้น',
@@ -130,19 +130,20 @@ export class VoteController {
     const tokenDecode = await this.jwtService.decode(token);
     const checkOwnerStatus = await this.checkOwner(idgroup, tokenDecode['id']);
     const checkOwnerPostStatus = await this.checkOwnerPost(idpost, tokenDecode['id']);
-    if (!checkOwnerStatus) {
-      res.status(200).json({
-        status: false,
-        message: 'คุณไม่ใช่เจ้าของกลุ่ม',
-      });
-      return;
-    }
-    if (!checkOwnerPostStatus) {
-      res.status(200).json({
-        status: false,
-        message: 'คุณไม่ใช่เจ้าของโพส',
-      });
-      return;
+    if (!checkOwnerPostStatus && !checkOwnerStatus) {
+      if (!checkOwnerStatus) {
+        res.status(200).json({
+          status: false,
+          message: 'คุณไม่ใช่เจ้าของกลุ่ม',
+        });
+        return;
+      } else if (!checkOwnerPostStatus) {
+        res.status(200).json({
+          status: false,
+          message: 'คุณไม่ใช่เจ้าของโพส',
+        });
+        return;
+      } 
     }
     this.voteService.close(idpost);
     res.status(200).json({
@@ -202,19 +203,21 @@ export class VoteController {
     const tokenDecode = await this.jwtService.decode(token);
     const checkOwnerStatus = await this.checkOwner(idgroup, tokenDecode['id']);
     const checkOwnerPostStatus = await this.checkOwnerPost(idpost, tokenDecode['id']);
-    if (!checkOwnerStatus) {
-      res.status(200).json({
-        status: false,
-        message: 'คุณไม่ใช่เจ้าของกลุ่ม',
-      });
-      return;
-    }
-    if (!checkOwnerPostStatus) {
-      res.status(200).json({
-        status: false,
-        message: 'คุณไม่ใช่เจ้าของโพส',
-      });
-      return;
+    if (!checkOwnerStatus && !checkOwnerPostStatus) {
+      if (!checkOwnerStatus) {
+        res.status(200).json({
+          status: false,
+          message: 'คุณไม่ใช่เจ้าของกลุ่ม',
+        });
+        return;
+      }
+      else if (!checkOwnerPostStatus) {
+        res.status(200).json({
+          status: false,
+          message: 'คุณไม่ใช่เจ้าของโพส',
+        });
+        return;
+      }
     }
     this.voteService.remove(idpost);
     res.status(200).json({

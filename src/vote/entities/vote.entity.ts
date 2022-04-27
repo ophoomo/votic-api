@@ -4,7 +4,7 @@ export class Vote {
   header: string;
   owner: string;
   select: Array<string>;
-  scroe: Array<number>;
+  score: Array<number>;
   voted: Array<string>;
   open: boolean;
 }

@@ -14,34 +14,31 @@ export class VoteService {
   ) {}
 
   async create(createVoteDto: CreateVoteDto, owner: string) {
-    const voteFormat: Vote = {
-      scroe: Array(createVoteDto.select.length).fill(0),
+    let voteFormat: Vote = {
+      score: Array(createVoteDto.select.length).fill(0),
       voted: [],
       open: true,
       owner: '',
       ...createVoteDto,
     };
     voteFormat.owner = owner;
-    const create = new this.voteModel(voteFormat);
+    const create =  new this.voteModel(voteFormat);
     return create.save();
   }
 
-  async vote(id: string, vote: VoteDto) {
+  async vote(id: string, vote: VoteDto, idmember: string) {
     const data = await this.findOne(id);
     const index = data.select.indexOf(vote.select);
+    let dataScore = data.score;
     if (index == -1) {
       return null;
     }
+    dataScore[index] += 1;
     return this.voteModel.updateOne(
       { _id: id },
-      { $push: { voted: id } },
       {
-        $inc: {
-          score: {
-            $each: 1,
-            $position: index,
-          },
-        },
+        $push: { voted: idmember },
+        $set: { score: dataScore },
       },
     );
   }
@@ -66,10 +63,7 @@ export class VoteService {
   }
 
   async close(id: string) {
-    return this.voteModel.updateOne(
-      { _id: id },
-      { $set: { open: false } },
-    );
+    return this.voteModel.updateOne({ _id: id }, { $set: { open: false } });
   }
 
   async remove(id: string) {
